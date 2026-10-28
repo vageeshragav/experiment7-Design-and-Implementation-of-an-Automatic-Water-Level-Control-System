@@ -226,3 +226,7 @@ The ADC value, percentage, and water-level status are transmitted through **USAR
 ## Result
 
 Thus, the **Water Level Indicator using STM32 Nucleo-L031K6** was designed and implemented successfully. The water level was measured using the ADC and displayed as **LOW, MEDIUM, or HIGH** on the Wokwi Serial Monitor.
+**OUTPUT **
+<img width="1535" height="863" alt="image" src="https://github.com/user-attachments/assets/f230110e-2f4c-4324-8529-c7c3c9f4e86f" />
+
+
