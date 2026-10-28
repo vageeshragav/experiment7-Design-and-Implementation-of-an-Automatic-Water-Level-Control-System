@@ -1,228 +1,216 @@
 # Experiment: Design and Implementation of a Water Level Indicator Using STM32
 
-## Aim
+## 1. Aim
 
-To design and implement a **Water Level Indicator using STM32 Nucleo-L031K6** that measures the water level using an analog input and displays the water level as **LOW, MEDIUM, or HIGH** on the Wokwi Serial Monitor.
+To design and implement a water level indicator using the STM32 Nucleo-L031K6 microcontroller to measure the water level using an analog input, display the water level as LOW, MEDIUM, or HIGH on the Serial Monitor, and blink an LED when an overflow condition is detected.
 
----
+## 2. Apparatus Required
 
-## Components Required
+1. STM32 Nucleo-L031K6 development board
+2. Potentiometer (to simulate the water-level sensor)
+3. Red LED
+4. 220 Ω resistor
+5. Connecting wires
+6. Computer with internet access
+7. Wokwi online simulator
+8. STM32 HAL development environment
+9. Virtual Serial Monitor
 
-- STM32 Nucleo-L031K6
-- Potentiometer to simulate the water-level sensor
-- Wokwi Simulator
-- Virtual Serial Monitor
-- Connecting wires
+## 3. Theory
 
----
+A water level indicator is an electronic system used to monitor the amount of water in a tank.
 
-## Theory
+In this experiment, a potentiometer is used to simulate a water-level sensor. It generates a variable analog voltage between 0 V and 3.3 V. This voltage is applied to the PA0 analog input of the STM32 Nucleo-L031K6.
 
-A **Water Level Indicator** is used to monitor the amount of water present in a tank.
+The STM32 microcontroller contains a 12-bit Analog-to-Digital Converter (ADC), which converts the analog voltage into a digital value ranging from 0 to 4095.
 
-In this experiment, a **potentiometer** is used in Wokwi to simulate the output of a water-level sensor. The potentiometer produces an analog voltage between **0 V and 3.3 V**.
+The water-level percentage is calculated using:
 
-The analog signal is connected to the **PA0 ADC input** of the STM32 Nucleo-L031K6.
+**Water Level (%) = (ADC Value × 100) / 4095**
 
-The STM32 contains a **12-bit Analog-to-Digital Converter (ADC)**. Therefore, the analog input voltage is converted into a digital value between:
+The water level is classified into three categories:
 
-- **0** → Minimum water level
-- **4095** → Maximum water level
+- 0–30%: LOW
+- Above 30% to 70%: MEDIUM
+- Above 70%: HIGH
 
-The ADC value is converted into a percentage, and the water level is classified as:
+When the water level exceeds 70%, the red LED blinks to indicate a high-water-level or overflow warning. The measured value and status are displayed on the Serial Monitor using UART communication.
 
-- **LOW**
-- **MEDIUM**
-- **HIGH**
+## 4. Pin Configuration
 
-The water-level information is displayed on the **Wokwi Serial Monitor** using UART communication.
-
----
-
-## Pin Configuration
-
-| Component | STM32 Pin | Function |
+| Component | STM32 Connection | Function |
 |---|---|---|
-| Potentiometer SIG | PA0 | ADC input |
-| Potentiometer VCC | 3.3V | Power supply |
+| Potentiometer VCC | 3V3 | Power supply |
 | Potentiometer GND | GND | Ground |
-| USART2 TX | PA2 | Serial data transmission |
-| USART2 RX | PA15 | Serial data reception |
+| Potentiometer SIG | PA0 / ADC input | Analog input |
+| Red LED anode | GPIO output through 220 Ω resistor | Overflow indication |
+| Red LED cathode | GND | Ground |
+| UART TX | Configured UART TX pin | Serial transmission |
+| UART RX | Configured UART RX pin | Serial reception |
 
----
+**Note:** Verify the actual GPIO and UART pin mapping for the selected Wokwi project before compiling the STM32 HAL program.
 
-## Block Diagram
+## 5. Block Diagram
 
-~~~text
-       Potentiometer
-   (Water Level Sensor)
-          │
-          │ Analog Signal
-          ▼
-       PA0 / ADC
-          │
-          ▼
-+-----------------------+
-| STM32 Nucleo-L031K6   |
-|                       |
-| ADC Conversion        |
-|        ↓              |
-| Water Level %         |
-|        ↓              |
-| LOW / MEDIUM / HIGH   |
-+-----------+-----------+
-            │
-            │ USART2
-            ▼
-      Serial Monitor
-            │
-            ▼
-   Water Level Display
-~~~
+```text
+        Potentiometer
+      (Water Level Sensor)
+              |
+              | Analog Voltage
+              v
+        PA0 / ADC Input
+              |
+              v
+    +-----------------------+
+    | STM32 Nucleo-L031K6   |
+    |                       |
+    | ADC Conversion        |
+    | Water Level (%)       |
+    | LOW / MEDIUM / HIGH   |
+    +-----------+-----------+
+                |
+          +-----+-----+
+          |           |
+          v           v
+     UART Serial    GPIO Output
+        Monitor         |
+                        v
+                    Red LED
+                 (Overflow Alert)
+```
 
----
-
-## Water Level Classification
-
-| Water Level | Percentage | Indication |
-|---|---:|---|
-| Low | 0–30% | LOW |
-| Medium | 31–70% | MEDIUM |
-| High | 71–100% | HIGH |
-
----
-
-## Algorithm
+## 6. Algorithm
 
 1. Start the program.
 2. Initialize the STM32 HAL library.
 3. Configure the system clock.
-4. Configure **PA0 as an analog input**.
-5. Initialize ADC1.
-6. Initialize USART2 for serial communication.
+4. Configure PA0 as an analog input.
+5. Initialize ADC1 and UART.
+6. Configure the LED GPIO pin as an output.
 7. Read the analog value from the potentiometer.
-8. Convert the ADC reading into water-level percentage.
-9. Compare the percentage with predefined limits.
-10. If the water level is less than or equal to 30%, display **LOW**.
-11. If the water level is between 31% and 70%, display **MEDIUM**.
-12. If the water level is greater than 70%, display **HIGH**.
-13. Display the ADC value, water-level percentage, and status on the Serial Monitor.
-14. Wait for one second.
-15. Repeat continuously.
+8. Convert the ADC reading into a percentage.
+9. If the percentage is 30% or less, display LOW and turn off the LED.
+10. If the percentage is above 30% and up to 70%, display MEDIUM and turn off the LED.
+11. If the percentage is above 70%, display HIGH and blink the LED.
+12. Display the ADC value, percentage, and status on the Serial Monitor.
+13. Repeat the process continuously.
 
----
+## 7. Program
 
-## Program
+The firmware is written for an STM32 HAL project. It requires the STM32 HAL drivers and the correct board-specific clock, ADC, GPIO, and UART configuration.
 
+The core water-level classification and overflow LED logic is:
 
-## Circuit Connections
+```c
+percentage = (waterLevel * 100U) / 4095U;
+
+if (percentage <= 30U)
+{
+    sendMessage("Status: LOW\r\n");
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+}
+else if (percentage <= 70U)
+{
+    sendMessage("Status: MEDIUM\r\n");
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+}
+else
+{
+    sendMessage("Status: HIGH - OVERFLOW ALERT!\r\n");
+
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+    HAL_Delay(500);
+
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+    HAL_Delay(500);
+}
+```
+
+Replace `LED_GPIO_Port` and `LED_Pin` with the GPIO port and pin configured for the LED in your STM32 project. This snippet belongs inside the main program loop, after reading the ADC value and calculating the percentage.
+
+## 8. Circuit Connections
 
 ### Potentiometer
 
-| Potentiometer Pin | STM32 Connection |
+| Potentiometer Pin | Connection |
 |---|---|
-| VCC | 3.3V |
-| GND | GND |
-| SIG / Middle Pin | PA0 |
+| VCC | STM32 3V3 |
+| GND | STM32 GND |
+| SIG / Middle Pin | STM32 PA0 |
 
----
+### Overflow LED
 
-## Circuit Diagram
+| LED Connection | Connection |
+|---|---|
+| Anode (+) | Configured GPIO output through a 220 Ω resistor |
+| Cathode (−) | GND |
 
-~~~text
-              Potentiometer
-         (Water Level Sensor)
-        +--------------------+
-3.3V ---| VCC                |
-GND  ---| GND                |
-        | SIG                 |
-        +--+-----------------+
-           |
-           |
-          PA0
-           |
-           v
-+---------------------------+
-| STM32 Nucleo-L031K6       |
-|                           |
-| PA0  -> ADC Input         |
-|                           |
-| PA2  -> USART2 TX         |
-| PA15 -> USART2 RX         |
-+-------------+-------------+
-              |
-              | UART
-              v
-       Wokwi Serial Monitor
-~~~
+## 9. Procedure
 
----
+1. Open the Wokwi online simulator.
+2. Create an STM32 Nucleo-L031K6 project.
+3. Add a potentiometer and a red LED with a 220 Ω resistor.
+4. Connect the potentiometer to 3V3, GND, and PA0.
+5. Connect the LED to the configured GPIO output and GND.
+6. Configure ADC1, GPIO, UART, and the system clock in the STM32 HAL project.
+7. Enter the program and compile it.
+8. Start the simulation and open the Serial Monitor.
+9. Rotate the potentiometer to simulate different water levels.
+10. Observe the ADC value, percentage, and water-level status.
+11. Increase the input above 70% and verify that the overflow LED blinks.
 
-## Procedure
+## 10. Expected Output
 
-1. Open **Wokwi**.
-2. Select the **STM32 Nucleo-L031K6** board.
-3. Add a **potentiometer**.
-4. Connect the potentiometer VCC pin to **3.3V**.
-5. Connect the potentiometer GND pin to **GND**.
-6. Connect the potentiometer SIG pin to **PA0**.
-7. Enter the STM32 HAL program.
-8. Compile the program.
-9. Start the simulation.
-10. Open the **Serial Monitor**.
-11. Rotate the potentiometer to simulate different water levels.
-12. Observe the ADC value, water-level percentage, and water-level status.
+### LOW Water Level
 
----
-
-## Expected Output
-
-### Low Water Level
-
-~~~text
+```text
 ADC Value: 800
 Water Level: 19%
 Status: LOW
-~~~
+```
 
-### Medium Water Level
+### MEDIUM Water Level
 
-~~~text
+```text
 ADC Value: 2200
 Water Level: 53%
 Status: MEDIUM
-~~~
+```
 
-### High Water Level
+### HIGH Water Level
 
-~~~text
+```text
 ADC Value: 3500
 Water Level: 85%
-Status: HIGH
-~~~
+Status: HIGH - OVERFLOW ALERT!
+```
 
----
+When the water level exceeds 70%, the red LED blinks to provide a visual warning.
 
-## Working
+## 11. Working
 
-The potentiometer produces an analog voltage that represents the water level in the tank.
+The potentiometer produces an analog voltage corresponding to the simulated water level. The STM32 ADC converts this voltage into a digital value between 0 and 4095.
 
-The STM32 reads this analog voltage through the **PA0 ADC input**. Since the ADC has a **12-bit resolution**, the analog signal is converted into a digital value between **0 and 4095**.
+The controller calculates the water-level percentage and compares it with the defined thresholds. The result is displayed on the Serial Monitor through UART. When the water level exceeds 70%, the controller activates the overflow warning by blinking the red LED.
 
-The ADC value is converted into water-level percentage using:
+## 12. Result
 
-`Water Level (%) = (ADC Value × 100) / 4095`
+The design of the water level indicator using the STM32 Nucleo-L031K6 was described. The system classifies the input as LOW, MEDIUM, or HIGH and provides a blinking LED warning for a high water level when the firmware and hardware are configured correctly.
+**OUTPUT**
+<img width="1535" height="774" alt="image" src="https://github.com/user-attachments/assets/30667b89-dd42-4c0c-ab38-2ebb285b3783" />
 
-The STM32 then classifies the water level as:
+## 13. Applications
 
-- **0–30% → LOW**
-- **31–70% → MEDIUM**
-- **71–100% → HIGH**
+- Water storage tanks
+- Overhead tank monitoring
+- Industrial liquid-level monitoring
+- Automatic water pump control systems
+- Water overflow warning systems
 
-The ADC value, percentage, and water-level status are transmitted through **USART2** and displayed on the **Wokwi Serial Monitor**.
+## 14. Future Enhancements
 
----
-
-## Result
-
-Thus, the **Water Level Indicator using STM32 Nucleo-L031K6** was designed and implemented successfully. The water level was measured using the ADC and displayed as **LOW, MEDIUM, or HIGH** on the Wokwi Serial Monitor.
+- Use an actual water-level sensor instead of a potentiometer.
+- Add a buzzer for audible overflow alerts.
+- Display the water level on an LCD or OLED.
+- Automatically switch a water pump on and off.
+- Integrate IoT monitoring and mobile notifications.
